@@ -240,7 +240,7 @@
             const completeTimeInput = enteredMinutes + enteredSeconds/60;
 
             // Check if entered values match the true difference
-            if (completeTimeInput === trueDifference) {
+            if (completeTimeInput.toFixed(8) === trueDifference.toFixed(8)) {
                 alert('Correct time difference!');
             } else {
                 alert('Incorrect difference. Please try again.  The answer is: ' + trueDifference + " while your answer was " + completeTimeInput);
