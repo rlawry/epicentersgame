@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Time Display with Timeline</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            position: relative;
+        }
+        .container {
+            text-align: center;
+            position: relative;
+            z-index: 2;
+            margin-top: 20px;
+        }
+        .time {
+            margin: 10px 0;
+            padding: 20px;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        #timelineCanvas {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 1;
+        }
+        input[type="text"] {
+            width: 150px;
+            padding: 10px;
+            margin: 5px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+        #timeDifference {
+            margin-top: 20px;
+        }
+        #submitButton {
+            padding: 10px 20px;
+            margin-left: 10px;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="timelineCanvas" width="800" height="300"></canvas>
+    <div class="container">
+        <div id="time1" class="time"></div>
+        <div id="time2" class="time"></div>
+        <div id="timeDifference">
+            <p>Enter the time difference between the P-wave and the S-wave</p>
+            <input type="text" id="minutesInput" value="Enter the minutes">
+            <input type="text" id="secondsInput" value="Enter the seconds">
+            <button id="submitButton">SUBMIT</button>
+        </div>
+    </div>
+
+    <script>
+        function generateTime(minMinutes, maxMinutes, intervalSeconds) {
+            let minutes = Math.floor(Math.random() * (maxMinutes - minMinutes + 1)) + minMinutes;
+            let seconds = Math.floor(Math.random() * 60);
+            seconds = Math.round(seconds / intervalSeconds) * intervalSeconds; // Snap seconds to interval
+            if (seconds >= 60) {
+                minutes++;
+                seconds = 0;
+            }
+            if (minutes > maxMinutes) {
+                minutes = maxMinutes;
+                seconds = 0;
+            }
+            return { minutes, seconds };
+        }
+
+        function getTimeInMinutes(time) {
+            return time.minutes + time.seconds / 60;
+        }
+
+        const minMinutes1 = 1;
+        const maxMinutes1 = 3;
+        const intervalSeconds1 = 10;
+
+        const minMinutes2 = minMinutes1;
+        const maxMinutes2 = 10;
+        const intervalSeconds2 = 15;
+
+        const time1 = generateTime(minMinutes1, maxMinutes1, intervalSeconds1);
+        const time2 = generateTime(time1.minutes+2, maxMinutes2-2, intervalSeconds2);
+
+        document.getElementById('time1').innerText = `${time1.minutes} minutes and ${time1.seconds} seconds`;
+        document.getElementById('time2').innerText = `${time2.minutes} minutes and ${time2.seconds} seconds`;
+
+        const minTime1 = getTimeInMinutes(time1);
+
+        const minTimeX1 = 50 + (minTime1 / 10) * 700;
+
+        const minTime2 = getTimeInMinutes(time2);
+
+        const minTimeX2 = 50 + (minTime2 / 10) * 700;
+
+        const canvas = document.getElementById('timelineCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Draw the timeline
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(50, 150);
+        ctx.lineTo(750, 150);
+        ctx.stroke();
+
+        // Draw tick marks and labels
+        ctx.font = '16px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+
+        for (let i = 0; i <= 10; i++) {
+            const x = 50 + i * 70; // Calculate x position for each minute (10 minutes over 700 pixels)
+            ctx.moveTo(x, 140);
+            ctx.lineTo(x, 160);
+            ctx.stroke();
+            ctx.fillText(i + ' min', x, 165);
+        }
+
+        // Draw shorter tick marks for every 20 second interval
+        for (let i = 0; i <= 30; i++) {
+            const x = 50 + i * (700 / 30); // 700 pixels for 10 minutes, 30 intervals for 20 seconds each
+            if (i % 3 !== 0) { // Skip the minute tick marks
+                ctx.moveTo(x, 145);
+                ctx.lineTo(x, 155);
+                ctx.stroke();
+            }
+        }
+
+        // Draw the label "Time" above the timeline
+        ctx.font = '20px Arial';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('Time', 400, 220);
+
+        // Define variables for wave drawing
+        const baselineAmplitude = 5; // Reduced baseline amplitude for the wave
+        const waveAmplitudeIncrease = 30; // Amplitude increase at the time point
+        var waveAmplitudeIncrease2 = 120;
+        const decayDuration = 3; // Duration in minutes for the amplitude to decay
+
+        // Draw the combined wave
+        ctx.strokeStyle = '#000'; // Color for carrier wave
+        drawWave(50, baselineAmplitude, decayDuration);
+
+        function drawWave(startX, baselineAmplitude, decayDuration) {
+            const points = 200; // Number of points to create a dense wave
+
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(startX, 100); // Starting point for the wave
+            if(minTime2-minTime1<2){waveAmplitudeIncrease2 = 150;}
+            else if(minTime2-minTime1<3){waveAmplitudeIncrease2 = 130;}
+            else if(minTime2-minTime1<4){waveAmplitudeIncrease2 = 110;}
+            else if(minTime2-minTime1<5){waveAmplitudeIncrease2 = 90;}
+            else if(minTime2-minTime1<6){waveAmplitudeIncrease2 = 70;}
+            for (let i = 0; i <= points; i++) {
+                const x = startX + (i * (700 / points)); // Spread points evenly along the width
+                let y = 100 + Math.random() * baselineAmplitude - (baselineAmplitude / 2); // Random y position with reduced baseline amplitude
+
+                if (x >= minTimeX1 && x <= minTimeX1 + (decayDuration / 10) * 700) {
+                    const decayFactor1 = 1 - ((x - minTimeX1) / ((decayDuration / 10) * 700));
+                    const waveAmplitude = baselineAmplitude + waveAmplitudeIncrease * decayFactor1;
+                    y = 100 + Math.random() * waveAmplitude - (waveAmplitude / 2);
+                }
+                if (x >= minTimeX2 && x <= minTimeX2 + (decayDuration / 10) * 700) {
+                    const decayFactor2 = 1 - ((x - minTimeX2) / ((decayDuration / 10) * 700));
+                    const waveAmplitude = baselineAmplitude + waveAmplitudeIncrease2 * decayFactor2;
+                    y = 100 + Math.random() * waveAmplitude - (waveAmplitude / 2);
+                }
+                ctx.lineTo(x, y);
+            }
+
+            ctx.stroke();
+        }
+
+        minutesInput.addEventListener('focus', function() {
+            if (this.value === 'Enter the minutes') {
+                this.value = '';
+            }
+        });
+
+        minutesInput.addEventListener('blur', function() {
+            if (this.value === '') {
+                this.value = 'Enter the minutes';
+            }
+        });
+
+        secondsInput.addEventListener('focus', function() {
+            if (this.value === 'Enter the seconds') {
+                this.value = '';
+            }
+        });
+
+        secondsInput.addEventListener('blur', function() {
+            if (this.value === '') {
+                this.value = 'Enter the seconds';
+            }
+        });
+
+        // Add event listener for submit button
+        document.getElementById('submitButton').addEventListener('click', function() {
+
+            const integerPattern = /^\d+$/;
+
+            // Check if input values are integers
+            if (!integerPattern.test(minutesInput.value) || !integerPattern.test(secondsInput.value)) {
+                alert('Please enter integers only for minutes and seconds.');
+                return; // Exit function early if inputs are not integers
+            }
+
+            // Get the input values and convert them to integers
+            const enteredMinutes = parseInt(minutesInput.value);
+            const enteredSeconds = parseInt(secondsInput.value);
+
+            // Calculate the true difference between time1 and time2
+            const completeTime1 = time1.minutes + time1.seconds/60;
+            const completeTime2 = time2.minutes + time2.seconds/60;
+            const trueDifference = completeTime2 - completeTime1;
+
+            const completeTimeInput = enteredMinutes + enteredSeconds/60;
+
+            // Check if entered values match the true difference
+            if (completeTimeInput === trueDifference) {
+                alert('Correct time difference!');
+            } else {
+                alert('Incorrect difference. Please try again.');
+            }
+        });
+    </script>
+</body>
+</html>
